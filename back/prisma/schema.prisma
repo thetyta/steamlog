@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  steamId64            String    @unique
+  displayName          String
+  avatarUrl            String?
+  profileUrl           String?
+  librarySyncedAt      DateTime?
+  geminiCacheName      String?
+  geminiCacheExpiresAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  library         LibraryEntry[]
+  recommendations Recommendation[]
+}
+
+model Game {
+  id               String    @id @default(cuid())
+  steamAppId       Int       @unique
+  igdbId           Int?
+  name             String
+  summary          String?
+  coverUrl         String?
+  releaseDate      DateTime?
+  avgPlaytimeHours Float?
+
+  priceCents      Int?
+  isFree          Boolean   @default(false)
+  headerImageUrl  String?
+  screenshots     Json?
+  detailedSummary String?
+  steamFetchedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  genres              Genre[]
+  libraryEntries      LibraryEntry[]
+  recommendationItems RecommendationItem[]
+}
+
+model Genre {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  games Game[]
+}
+
+enum LibraryStatus {
+  BACKLOG
+  PLAYING
+  COMPLETED
+  ABANDONED
+}
+
+model LibraryEntry {
+  userId          String
+  gameId          String
+  playtimeMinutes Int           @default(0)
+  lastPlayedAt    DateTime?
+  status          LibraryStatus @default(BACKLOG)
+  userRating      Int?
+  userNote        String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@id([userId, gameId])
+  @@index([userId, status])
+}
+
+model Recommendation {
+  id            String   @id @default(cuid())
+  userId        String
+  mood          String
+  timeAvailable String?
+  context       String?
+  rawResponse   Json
+  createdAt     DateTime @default(now())
+
+  user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items RecommendationItem[]
+
+  @@index([userId, createdAt])
+}
+
+enum RecommendationFeedback {
+  LIKED
+  DISLIKED
+  PLAYED
+  SKIPPED
+}
+
+model RecommendationItem {
+  id               String                  @id @default(cuid())
+  recommendationId String
+  gameId           String
+  rank             Int
+  reason           String
+  userFeedback     RecommendationFeedback?
+
+  recommendation Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  game           Game           @relation(fields: [gameId], references: [id])
+
+  @@index([recommendationId])
+}
