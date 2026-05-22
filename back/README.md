@@ -93,11 +93,25 @@ Este script faz duas coisas em sequência:
 > Se você alterar o `schema.prisma` e precisar criar uma **nova** migration, rode `npm run prisma:migrate` manualmente — ele é interativo e pede o nome da migration.
 
 
+## Coleção Postman
+
+Em `postman/des-web.postman_collection.json` tem todos os endpoints prontos pra importar no Postman (ou Insomnia, que aceita o mesmo formato).
+
+**Como usar:**
+
+1. No Postman: **Import** → selecione `postman/des-web.postman_collection.json`.
+2. Edite as variáveis da coleção:
+   - `baseUrl` → já vem como `http://localhost:3333`.
+   - `token` → cole o JWT obtido após login Steam (extraído da URL de callback `?token=...`).
+   - `gameId`, `recommendationId`, `recommendationItemId` → preencha conforme for testando.
+3. A coleção já tem auth Bearer configurada no nível da coleção — endpoints públicos (`/health`, `/games/:id`, `/auth/steam*`) sobrescrevem pra `noauth`.
+
 ## Estrutura
 
 ```
 back/
 ├── docker-compose.yml      # Serviço do Postgres
+├── postman/                # Coleção Postman dos endpoints
 ├── prisma/
 │   ├── schema.prisma       # Modelo de dados
 │   └── migrations/         # Histórico de migrations

@@ -1,0 +1,243 @@
+{
+  "info": {
+    "name": "DES Web — Recomendador Steam + Gemini",
+    "description": "Coleção dos endpoints do backend. Defina `baseUrl` e `token` nas variáveis da coleção. O `token` é obtido após o fluxo de login via Steam (`/auth/steam`) — em dev, copie do JWT retornado no callback.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "des-web-backend-collection"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3333", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "gameId", "value": "", "type": "string" },
+    { "key": "recommendationId", "value": "", "type": "string" },
+    { "key": "recommendationItemId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Healthcheck simples. Retorna `{ status: 'ok' }`. Não requer auth."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "GET /auth/steam (inicia login OpenID)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/steam", "host": ["{{baseUrl}}"], "path": ["auth", "steam"] },
+            "description": "Redireciona pro Steam OpenID. Depende de `STEAM_API_KEY`. Use no navegador — não funciona como request standalone."
+          }
+        },
+        {
+          "name": "GET /auth/steam/return (callback do Steam)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/steam/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "steam", "return"]
+            },
+            "description": "Callback chamado pelo Steam após login. Redireciona pro frontend com `?token=<JWT>`. Copie esse JWT pra variável `token` da coleção."
+          }
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Retorna o usuário autenticado. Requer Bearer token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Steam",
+      "item": [
+        {
+          "name": "POST /steam/sync",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/steam/sync", "host": ["{{baseUrl}}"], "path": ["steam", "sync"] },
+            "description": "Sincroniza a biblioteca Steam do usuário (puxa jogos owned, enriquece com IGDB, popula `LibraryEntry`). Requer auth + `STEAM_API_KEY` + `IGDB_*`. O perfil Steam precisa estar com 'Detalhes do jogo: Público'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "item": [
+        {
+          "name": "GET /library (lista com filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/library?status=PLAYING&search=&sortBy=playtime&page=1&pageSize=24",
+              "host": ["{{baseUrl}}"],
+              "path": ["library"],
+              "query": [
+                { "key": "status", "value": "PLAYING", "description": "BACKLOG | PLAYING | COMPLETED | ABANDONED" },
+                { "key": "search", "value": "", "description": "Filtro por nome (case-insensitive)" },
+                { "key": "sortBy", "value": "playtime", "description": "name | playtime | lastPlayed | recent" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "24", "description": "1–100" }
+              ]
+            },
+            "description": "Lista paginada da biblioteca do usuário. Todos os query params são opcionais."
+          }
+        },
+        {
+          "name": "GET /library/:gameId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/library/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["library", "{{gameId}}"]
+            },
+            "description": "Detalhe de um jogo na biblioteca. Na primeira chamada, busca dados extras na Steam Store (preço, screenshots) e cacheia."
+          }
+        },
+        {
+          "name": "PATCH /library/:gameId",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PLAYING\",\n  \"userRating\": 5,\n  \"userNote\": \"Tô viciado nesse\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/library/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["library", "{{gameId}}"]
+            },
+            "description": "Atualiza status, nota (1–5) e/ou observação do usuário. Todos os campos são opcionais. `userRating` e `userNote` aceitam `null` pra limpar."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Games",
+      "item": [
+        {
+          "name": "GET /games/:id",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/games/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["games", "{{gameId}}"]
+            },
+            "description": "Detalhe público de um jogo (com gêneros). Não requer auth."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recommendations",
+      "item": [
+        {
+          "name": "POST /recommendations (gerar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mood\": \"quero algo relaxante e curto\",\n  \"timeAvailable\": \"1 hora\",\n  \"context\": \"vou jogar antes de dormir\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": ["{{baseUrl}}"],
+              "path": ["recommendations"]
+            },
+            "description": "Gera recomendações via Gemini com base na biblioteca + humor/tempo/contexto. Requer auth + `GEMINI_API_KEY`. A biblioteca precisa estar sincronizada (`POST /steam/sync`)."
+          }
+        },
+        {
+          "name": "GET /recommendations (histórico)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations",
+              "host": ["{{baseUrl}}"],
+              "path": ["recommendations"]
+            },
+            "description": "Lista as últimas 50 recomendações do usuário (mais recentes primeiro)."
+          }
+        },
+        {
+          "name": "GET /recommendations/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/{{recommendationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["recommendations", "{{recommendationId}}"]
+            },
+            "description": "Detalhe de uma recomendação específica do usuário."
+          }
+        },
+        {
+          "name": "POST /recommendations/items/:itemId/feedback",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feedback\": \"LIKED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/items/{{recommendationItemId}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["recommendations", "items", "{{recommendationItemId}}", "feedback"]
+            },
+            "description": "Registra feedback do usuário num item recomendado. Valores: LIKED | DISLIKED | PLAYED | SKIPPED."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stats",
+      "item": [
+        {
+          "name": "GET /stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/stats", "host": ["{{baseUrl}}"], "path": ["stats"] },
+            "description": "Agregados da biblioteca do usuário: total de jogos, horas, contagem por status e top 10 gêneros."
+          }
+        }
+      ]
+    }
+  ]
+}
