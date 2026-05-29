@@ -6,10 +6,12 @@ Guia de execução do backend. Todos os comandos são rodados a partir desta pas
 
 - **Node.js** 20+ (ou 22+)
 - **Docker** + **Docker Compose**
-- **Chaves de API** (gratuitas):
-  - [Steam Web API Key](https://steamcommunity.com/dev/apikey)
-  - [IGDB / Twitch](https://api-docs.igdb.com) — exige criar app em [dev.twitch.tv](https://dev.twitch.tv)
-  - [Gemini API Key](https://aistudio.google.com/apikey)
+- **Chaves de API** — **todas opcionais**. O backend roda e é testável (login, CRUDs) sem nenhuma delas. As chaves só habilitam as integrações externas:
+  - [Steam Web API Key](https://steamcommunity.com/dev/apikey) — sync da biblioteca Steam
+  - [IGDB / Twitch](https://api-docs.igdb.com) — enriquecimento de metadados (criar app em [dev.twitch.tv](https://dev.twitch.tv))
+  - [Gemini API Key](https://aistudio.google.com/apikey) — recomendações por IA
+
+> **Auth:** o login é por **e-mail + senha**. A conta é criada em `POST /auth/register` e a Steam é vinculada *depois*, opcionalmente, via `POST /auth/steam/link` (aceita o steamId64 direto, sem precisar de chave). Não é necessário login pela Steam pra usar o sistema.
 
 ## 1. Configurar variáveis de ambiente
 
@@ -85,13 +87,29 @@ Gera o cliente tipado a partir de `prisma/schema.prisma`. Precisa ser rodado sem
 npm run dev
 ```
 
-Este script faz duas coisas em sequência:
+Este script faz três coisas em sequência:
 
 1. **`prisma migrate deploy`** — aplica todas as migrations pendentes de `prisma/migrations/` no banco.
-2. **`tsx --env-file=.env src/server.ts`** — sobe o Fastify, escutando por padrão em `http://localhost:3333`.
+2. **`tsx --env-file=.env prisma/seed.ts`** — popula os dados de teste (ver abaixo). É idempotente, então rodar a cada `npm run dev` não duplica nada.
+3. **`tsx --env-file=.env src/server.ts`** — sobe o Fastify, escutando por padrão em `http://localhost:3333`.
 
 > Se você alterar o `schema.prisma` e precisar criar uma **nova** migration, rode `npm run prisma:migrate` manualmente — ele é interativo e pede o nome da migration.
 
+## 6. Dados de teste (seed)
+
+O seed roda **automaticamente** no `npm run dev` — não precisa de passo extra. Se quiser rodar só ele (sem subir o servidor), use:
+
+```bash
+npm run seed
+```
+
+Cria, de forma **idempotente** (pode rodar quantas vezes quiser):
+
+- Um usuário demo: **`userdemo@email.com`** / senha **`senha1234`**
+- ~8 jogos de exemplo (Hollow Knight, Stardew Valley, Hades, etc.) com gêneros
+- Algumas entradas de biblioteca, uma coleção ("Favoritos"), uma tag ("relaxar") e uma sessão de jogo
+
+Assim dá pra testar os CRUDs no Postman sem depender de nenhuma chave externa. Faça login com o usuário demo e os `gameId` dos jogos do seed aparecem em `GET /library`.
 
 ## Coleção Postman
 
@@ -100,11 +118,9 @@ Em `postman/des-web.postman_collection.json` tem todos os endpoints prontos pra 
 **Como usar:**
 
 1. No Postman: **Import** → selecione `postman/des-web.postman_collection.json`.
-2. Edite as variáveis da coleção:
-   - `baseUrl` → já vem como `http://localhost:3333`.
-   - `token` → cole o JWT obtido após login Steam (extraído da URL de callback `?token=...`).
-   - `gameId`, `recommendationId`, `recommendationItemId` → preencha conforme for testando.
-3. A coleção já tem auth Bearer configurada no nível da coleção — endpoints públicos (`/health`, `/games/:id`, `/auth/steam*`) sobrescrevem pra `noauth`.
+2. Rode **Auth → POST /auth/login** (já vem preenchido com o usuário demo do seed). O `token` é salvo **automaticamente** na variável da coleção por um script de teste — não precisa copiar/colar JWT. (O mesmo vale pro `POST /auth/register`.)
+3. Teste os CRUDs: **Collections**, **Tags**, **Sessions**. Ao criar uma coleção/tag/sessão, o id também é salvo numa variável (`collectionId`, `tagId`, `sessionId`) pros requests seguintes. Pegue um `gameId` em `GET /library` e cole na variável `gameId`.
+4. A coleção já tem auth Bearer configurada no nível da coleção — endpoints públicos (`/health`, `/games/:id`, `/auth/register`, `/auth/login`, `/auth/steam`) sobrescrevem pra `noauth`.
 
 ## Estrutura
 
@@ -126,9 +142,11 @@ back/
 ## Fluxo resumido (TL;DR)
 
 ```bash
-cp .env.example .env             # preencha as chaves
+cp .env.example .env             # chaves externas são opcionais; só JWT_SECRET + DATABASE_URL são obrigatórios
 docker compose up -d
 npm install
 npm run prisma:generate
-npm run dev                      # já roda migrate deploy + servidor
+npm run dev                      # roda migrate deploy + seed + servidor (deixe rodando)
 ```
+
+O `npm run dev` já popula o usuário demo **`userdemo@email.com`** / `senha1234` e os jogos. Depois é só importar a coleção do Postman e rodar **POST /auth/login**.

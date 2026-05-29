@@ -9,7 +9,9 @@ datasource db {
 
 model User {
   id                   String    @id @default(cuid())
-  steamId64            String    @unique
+  email                String    @unique
+  passwordHash         String
+  steamId64            String?   @unique
   displayName          String
   avatarUrl            String?
   profileUrl           String?
@@ -21,6 +23,9 @@ model User {
 
   library         LibraryEntry[]
   recommendations Recommendation[]
+  collections     Collection[]
+  tags            Tag[]
+  playSessions    PlaySession[]
 }
 
 model Game {
@@ -46,6 +51,9 @@ model Game {
   genres              Genre[]
   libraryEntries      LibraryEntry[]
   recommendationItems RecommendationItem[]
+  collections         Collection[]
+  tags                Tag[]
+  playSessions        PlaySession[]
 }
 
 model Genre {
@@ -113,4 +121,52 @@ model RecommendationItem {
   game           Game           @relation(fields: [gameId], references: [id])
 
   @@index([recommendationId])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  games Game[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  games Game[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model PlaySession {
+  id              String   @id @default(cuid())
+  userId          String
+  gameId          String
+  playedAt        DateTime @default(now())
+  durationMinutes Int
+  rating          Int?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([userId, playedAt])
+  @@index([gameId])
 }

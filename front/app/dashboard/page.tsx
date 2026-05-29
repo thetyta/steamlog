@@ -1,17 +1,23 @@
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ExternalLink, Library, Sparkles } from 'lucide-react'
+import { ExternalLink, Gamepad2, Library, Sparkles } from 'lucide-react'
 import { getMe } from '@/lib/queries'
 import { Button } from '@/components/ui/button'
 import { TopNav } from '@/components/top-nav'
 import { SyncSteamButton } from './sync-button'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { steam?: string }
+}) {
   const me = await getMe()
   if (!me) redirect('/')
 
   const synced = me.librarySyncedAt ? new Date(me.librarySyncedAt) : null
+  const justLinked = searchParams.steam === 'linked'
+  const alreadyLinked = searchParams.steam === 'already_linked'
 
   return (
     <>
@@ -43,8 +49,39 @@ export default async function DashboardPage() {
           </div>
         </header>
 
+        {justLinked && (
+          <p className="mt-6 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm text-foreground">
+            Steam vinculada com sucesso! Agora você pode sincronizar sua biblioteca.
+          </p>
+        )}
+        {alreadyLinked && (
+          <p className="mt-6 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+            Essa conta Steam já está vinculada a outro usuário.
+          </p>
+        )}
+
         <section className="mt-10 rounded-xl border border-border bg-card/60 p-6 backdrop-blur">
-          {synced ? (
+          {!me.steamId64 ? (
+            <>
+              <h2 className="font-semibold">Vincule sua Steam</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Sua conta ainda não tem uma Steam vinculada. Vincule pra importar sua
+                biblioteca e receber recomendações.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground/70">
+                Requer que o servidor tenha a <code>STEAM_API_KEY</code> configurada e que
+                seu perfil esteja com &quot;Detalhes do jogo: Público&quot;.
+              </p>
+              <div className="mt-6">
+                <Button asChild size="lg">
+                  <Link href="/auth/steam/start">
+                    <Gamepad2 className="size-4" />
+                    Vincular com Steam
+                  </Link>
+                </Button>
+              </div>
+            </>
+          ) : synced ? (
             <>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>

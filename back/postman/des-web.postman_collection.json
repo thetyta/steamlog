@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DES Web — Recomendador Steam + Gemini",
-    "description": "Coleção dos endpoints do backend. Defina `baseUrl` e `token` nas variáveis da coleção. O `token` é obtido após o fluxo de login via Steam (`/auth/steam`) — em dev, copie do JWT retornado no callback.",
+    "description": "Coleção dos endpoints do backend. Defina `baseUrl` nas variáveis da coleção. O `token` é preenchido automaticamente ao rodar **Auth → POST /auth/register** ou **POST /auth/login** (têm script que salva o JWT na variável da coleção).\n\nFluxo sugerido pro professor:\n1. Rode o seed (`npm run seed`) — cria o usuário demo `userdemo@email.com` / `senha1234` e ~8 jogos.\n2. Rode **POST /auth/login** com esse usuário (token salvo sozinho).\n3. Teste os CRUDs: Collections, Tags, Sessions. Os jogos do seed alimentam todos eles.\n\nSteam/IGDB/Gemini são opcionais e só funcionam com as chaves no `.env`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "des-web-backend-collection"
   },
@@ -15,6 +15,9 @@
     { "key": "baseUrl", "value": "http://localhost:3333", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
     { "key": "gameId", "value": "", "type": "string" },
+    { "key": "collectionId", "value": "", "type": "string" },
+    { "key": "tagId", "value": "", "type": "string" },
+    { "key": "sessionId", "value": "", "type": "string" },
     { "key": "recommendationId", "value": "", "type": "string" },
     { "key": "recommendationItemId", "value": "", "type": "string" }
   ],
@@ -38,27 +41,61 @@
       "name": "Auth",
       "item": [
         {
-          "name": "GET /auth/steam (inicia login OpenID)",
+          "name": "POST /auth/register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json()",
+                  "if (data.token) {",
+                  "  pm.collectionVariables.set('token', data.token)",
+                  "  console.log('token salvo na variável da coleção')",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": { "type": "noauth" },
-            "method": "GET",
-            "header": [],
-            "url": { "raw": "{{baseUrl}}/auth/steam", "host": ["{{baseUrl}}"], "path": ["auth", "steam"] },
-            "description": "Redireciona pro Steam OpenID. Depende de `STEAM_API_KEY`. Use no navegador — não funciona como request standalone."
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aluno@teste.com\",\n  \"password\": \"senhaSegura123\",\n  \"displayName\": \"Aluno Teste\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Cria uma conta com e-mail + senha (mín. 8 caracteres). `displayName` é opcional (default: parte antes do @). Retorna `{ token, user }` e o script de teste já salva o `token`. 409 se o e-mail já existe."
           }
         },
         {
-          "name": "GET /auth/steam/return (callback do Steam)",
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json()",
+                  "if (data.token) {",
+                  "  pm.collectionVariables.set('token', data.token)",
+                  "  console.log('token salvo na variável da coleção')",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": { "type": "noauth" },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/steam/return",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "steam", "return"]
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"userdemo@email.com\",\n  \"password\": \"senha1234\"\n}"
             },
-            "description": "Callback chamado pelo Steam após login. Redireciona pro frontend com `?token=<JWT>`. Copie esse JWT pra variável `token` da coleção."
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Login com e-mail + senha. Por padrão usa o usuário demo do seed. Retorna `{ token, user }` e o script salva o `token` automaticamente. 401 se credenciais inválidas."
           }
         },
         {
@@ -68,6 +105,305 @@
             "header": [],
             "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
             "description": "Retorna o usuário autenticado. Requer Bearer token."
+          }
+        },
+        {
+          "name": "POST /auth/steam/link (manual)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"steamId64\": \"76561198000000000\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/steam/link", "host": ["{{baseUrl}}"], "path": ["auth", "steam", "link"] },
+            "description": "Vincula um steamId64 (17 dígitos) à conta logada, SEM precisar de chave Steam — testável no Postman. 409 se o steamId64 já estiver em outra conta. Depois disso, POST /steam/sync funciona (se houver STEAM_API_KEY)."
+          }
+        },
+        {
+          "name": "DELETE /auth/steam/link",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/steam/link", "host": ["{{baseUrl}}"], "path": ["auth", "steam", "link"] },
+            "description": "Desvincula a Steam da conta logada (zera o steamId64)."
+          }
+        },
+        {
+          "name": "GET /auth/steam (OpenID — navegador)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/steam?token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "steam"],
+              "query": [{ "key": "token", "value": "{{token}}", "description": "JWT da conta logada — a Steam é linkada nessa conta" }]
+            },
+            "description": "Fluxo opcional via Steam OpenID (requer STEAM_API_KEY). Use no NAVEGADOR, não no Postman: redireciona pro login Steam e, no retorno, vincula a Steam à conta do `token`. A alternativa testável no Postman é POST /auth/steam/link."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Collections (CRUD)",
+      "description": "Listas próprias do usuário (ex: 'Favoritos', 'Quero jogar'). Relação N-N com Game.",
+      "item": [
+        {
+          "name": "POST /collections",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json()",
+                  "if (data.id) pm.collectionVariables.set('collectionId', data.id)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Quero jogar\",\n  \"description\": \"Backlog priorizado\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/collections", "host": ["{{baseUrl}}"], "path": ["collections"] },
+            "description": "Cria uma coleção. `description` é opcional. 409 se já existir coleção com esse nome pra você. Salva o id em `collectionId`."
+          }
+        },
+        {
+          "name": "GET /collections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/collections", "host": ["{{baseUrl}}"], "path": ["collections"] },
+            "description": "Lista suas coleções (com a contagem de jogos de cada uma)."
+          }
+        },
+        {
+          "name": "GET /collections/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/collections/{{collectionId}}", "host": ["{{baseUrl}}"], "path": ["collections", "{{collectionId}}"] },
+            "description": "Detalhe de uma coleção, incluindo os jogos dentro dela (com gêneros). 404 se não for sua."
+          }
+        },
+        {
+          "name": "PATCH /collections/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Quero jogar (renomeada)\",\n  \"description\": \"atualizada\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/collections/{{collectionId}}", "host": ["{{baseUrl}}"], "path": ["collections", "{{collectionId}}"] },
+            "description": "Atualiza nome e/ou descrição. Ambos opcionais. `description` aceita null."
+          }
+        },
+        {
+          "name": "POST /collections/:id/games",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gameId\": \"{{gameId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/collections/{{collectionId}}/games", "host": ["{{baseUrl}}"], "path": ["collections", "{{collectionId}}", "games"] },
+            "description": "Adiciona um jogo à coleção. Preencha `gameId` (pegue um de GET /library ou GET /collections/:id). 404 se a coleção ou o jogo não existir."
+          }
+        },
+        {
+          "name": "DELETE /collections/:id/games/:gameId",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/collections/{{collectionId}}/games/{{gameId}}", "host": ["{{baseUrl}}"], "path": ["collections", "{{collectionId}}", "games", "{{gameId}}"] },
+            "description": "Remove um jogo da coleção (não apaga o jogo)."
+          }
+        },
+        {
+          "name": "DELETE /collections/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/collections/{{collectionId}}", "host": ["{{baseUrl}}"], "path": ["collections", "{{collectionId}}"] },
+            "description": "Apaga a coleção. Retorna 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tags (CRUD)",
+      "description": "Rótulos do usuário (ex: 'relaxar', 'coop') aplicáveis a jogos. Relação N-N com Game.",
+      "item": [
+        {
+          "name": "POST /tags",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json()",
+                  "if (data.id) pm.collectionVariables.set('tagId', data.id)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"coop\",\n  \"color\": \"#ff8800\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"] },
+            "description": "Cria uma tag. `color` é opcional, formato hex `#rrggbb` (400 se inválido). 409 se já existir tag com esse nome pra você. Salva o id em `tagId`."
+          }
+        },
+        {
+          "name": "GET /tags",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"] },
+            "description": "Lista suas tags (com a contagem de jogos marcados)."
+          }
+        },
+        {
+          "name": "GET /tags/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{tagId}}"] },
+            "description": "Detalhe de uma tag, incluindo os jogos marcados com ela."
+          }
+        },
+        {
+          "name": "PATCH /tags/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"co-op\",\n  \"color\": \"#00aa55\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{tagId}}"] },
+            "description": "Atualiza nome e/ou cor. Ambos opcionais."
+          }
+        },
+        {
+          "name": "POST /tags/:id/games/:gameId",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/tags/{{tagId}}/games/{{gameId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{tagId}}", "games", "{{gameId}}"] },
+            "description": "Marca um jogo com a tag. 404 se a tag ou o jogo não existir."
+          }
+        },
+        {
+          "name": "DELETE /tags/:id/games/:gameId",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/tags/{{tagId}}/games/{{gameId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{tagId}}", "games", "{{gameId}}"] },
+            "description": "Remove a marcação da tag no jogo."
+          }
+        },
+        {
+          "name": "DELETE /tags/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{tagId}}"] },
+            "description": "Apaga a tag. Retorna 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions (CRUD)",
+      "description": "Diário de sessões de jogo do usuário. Relação 1-N (uma linha por sessão jogada).",
+      "item": [
+        {
+          "name": "POST /sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json()",
+                  "if (data.id) pm.collectionVariables.set('sessionId', data.id)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gameId\": \"{{gameId}}\",\n  \"durationMinutes\": 120,\n  \"rating\": 4,\n  \"note\": \"Sessão tranquila antes de dormir\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sessions", "host": ["{{baseUrl}}"], "path": ["sessions"] },
+            "description": "Registra uma sessão de jogo. `gameId` e `durationMinutes` (1–10080) obrigatórios. `playedAt` (ISO, default agora), `rating` (1–5) e `note` opcionais. 404 se o jogo não existir. Salva o id em `sessionId`."
+          }
+        },
+        {
+          "name": "GET /sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions"],
+              "query": [
+                { "key": "gameId", "value": "", "description": "filtra por jogo (opcional)", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20", "description": "1–100" }
+              ]
+            },
+            "description": "Lista paginada das suas sessões (mais recentes primeiro). Filtro opcional por `gameId`."
+          }
+        },
+        {
+          "name": "GET /sessions/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["sessions", "{{sessionId}}"] },
+            "description": "Detalhe de uma sessão (com o jogo). 404 se não for sua."
+          }
+        },
+        {
+          "name": "PATCH /sessions/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationMinutes\": 150,\n  \"rating\": 5,\n  \"note\": \"Atualizei a nota\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["sessions", "{{sessionId}}"] },
+            "description": "Atualiza uma sessão. Todos os campos opcionais. `rating`/`note` aceitam null."
+          }
+        },
+        {
+          "name": "DELETE /sessions/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["sessions", "{{sessionId}}"] },
+            "description": "Apaga a sessão. Retorna 204."
           }
         }
       ]
@@ -81,7 +417,7 @@
             "method": "POST",
             "header": [],
             "url": { "raw": "{{baseUrl}}/steam/sync", "host": ["{{baseUrl}}"], "path": ["steam", "sync"] },
-            "description": "Sincroniza a biblioteca Steam do usuário (puxa jogos owned, enriquece com IGDB, popula `LibraryEntry`). Requer auth + `STEAM_API_KEY` + `IGDB_*`. O perfil Steam precisa estar com 'Detalhes do jogo: Público'."
+            "description": "Sincroniza a biblioteca Steam (puxa owned games, enriquece com IGDB, popula LibraryEntry). Requer auth + Steam vinculada (POST /auth/steam/link) + STEAM_API_KEY + IGDB_*. 400 se a conta não tiver Steam vinculada."
           }
         }
       ]
@@ -106,7 +442,7 @@
                 { "key": "pageSize", "value": "24", "description": "1–100" }
               ]
             },
-            "description": "Lista paginada da biblioteca do usuário. Todos os query params são opcionais."
+            "description": "Lista paginada da biblioteca do usuário. Todos os query params são opcionais. Os jogos do seed aparecem aqui — use o `gameId` retornado nos CRUDs acima."
           }
         },
         {
@@ -177,7 +513,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["recommendations"]
             },
-            "description": "Gera recomendações via Gemini com base na biblioteca + humor/tempo/contexto. Requer auth + `GEMINI_API_KEY`. A biblioteca precisa estar sincronizada (`POST /steam/sync`)."
+            "description": "Gera recomendações via Gemini com base na biblioteca + humor/tempo/contexto. Requer auth + `GEMINI_API_KEY`. A biblioteca precisa ter jogos (o seed já popula)."
           }
         },
         {

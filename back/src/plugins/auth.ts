@@ -11,8 +11,8 @@ declare module 'fastify' {
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { sub: string; steamId64: string }
-    user: { sub: string; steamId64: string }
+    payload: { sub: string }
+    user: { sub: string }
   }
 }
 

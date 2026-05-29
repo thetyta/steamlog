@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Gamepad2, Sparkles, Library } from 'lucide-react'
 import { getSessionToken } from '@/lib/auth'
-import { env } from '@/lib/env'
 
 export default function LandingPage() {
   if (getSessionToken()) redirect('/dashboard')
@@ -20,21 +19,26 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-lg text-muted-foreground max-w-xl">
-          Conecta sua conta Steam, diz seu humor e tempo disponível, e o GameMuse escolhe
-          o melhor jogo da <em>sua</em> biblioteca pra você jogar agora.
+          Crie sua conta, diz seu humor e tempo disponível, e o GameMuse escolhe
+          o melhor jogo da <em>sua</em> biblioteca pra você jogar agora. Vincule a Steam
+          quando quiser pra importar seus jogos.
         </p>
 
-        <Link
-          href={`${env.BACKEND_URL}/auth/steam`}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground transition hover:opacity-90 neon-ring"
-        >
-          <Gamepad2 className="size-5" />
-          Entrar com Steam
-        </Link>
-
-        <p className="text-xs text-muted-foreground/70 mt-2">
-          Seu perfil Steam precisa estar com &quot;Detalhes do jogo: Público&quot;
-        </p>
+        <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground transition hover:opacity-90 neon-ring"
+          >
+            <Gamepad2 className="size-5" />
+            Criar conta
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card/60 px-6 py-3 text-base font-medium transition hover:bg-accent"
+          >
+            Entrar
+          </Link>
+        </div>
       </div>
 
       <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl">

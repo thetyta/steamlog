@@ -7,6 +7,12 @@ export async function steamRoutes(app: FastifyInstance) {
   app.post('/sync', { onRequest: [app.authenticate] }, async (request, reply) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.user.sub } })
 
+    if (!user.steamId64) {
+      return reply.code(400).send({
+        error: 'Conta sem Steam vinculada. Linke via POST /auth/steam/link antes de sincronizar.',
+      })
+    }
+
     const owned = await fetchOwnedGames(user.steamId64)
     if (owned.length === 0) {
       return reply.code(200).send({

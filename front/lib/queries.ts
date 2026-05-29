@@ -5,7 +5,8 @@ import { getSessionToken } from './auth'
 
 export type Me = {
   id: string
-  steamId64: string
+  email: string
+  steamId64: string | null
   displayName: string
   avatarUrl: string | null
   profileUrl: string | null
