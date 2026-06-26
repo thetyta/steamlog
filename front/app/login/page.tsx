@@ -6,7 +6,7 @@ import { loginAction } from '@/app/auth/actions'
 import { AuthForm } from '@/app/auth/auth-form'
 
 export default function LoginPage() {
-  if (getSessionToken()) redirect('/dashboard')
+  if (getSessionToken()) redirect('/perfil')
 
   return (
     <main className="container flex min-h-screen flex-col items-center justify-center py-16">

@@ -21,7 +21,11 @@ type SearchParams = {
   search?: string
   sortBy?: string
   page?: string
+  collectionId?: string
+  tagId?: string
 }
+
+type FilterOption = { id: string; name: string }
 
 export default async function LibraryPage({
   searchParams,
@@ -30,16 +34,22 @@ export default async function LibraryPage({
 }) {
   const me = await getMe()
   if (!me) redirect('/')
-  if (!me.librarySyncedAt) redirect('/dashboard')
+  if (!me.librarySyncedAt) redirect('/perfil')
 
   const query = new URLSearchParams()
   if (searchParams.status) query.set('status', searchParams.status)
   if (searchParams.search) query.set('search', searchParams.search)
   if (searchParams.sortBy) query.set('sortBy', searchParams.sortBy)
+  if (searchParams.collectionId) query.set('collectionId', searchParams.collectionId)
+  if (searchParams.tagId) query.set('tagId', searchParams.tagId)
   if (searchParams.page) query.set('page', searchParams.page)
   query.set('pageSize', '48')
 
-  const data = await api<LibraryResponse>(`/library?${query.toString()}`)
+  const [data, collections, tags] = await Promise.all([
+    api<LibraryResponse>(`/library?${query.toString()}`),
+    api<FilterOption[]>('/collections'),
+    api<FilterOption[]>('/tags'),
+  ])
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize))
 
   return (
@@ -56,7 +66,7 @@ export default async function LibraryPage({
         </div>
 
         <div className="mt-6">
-          <LibraryFilters />
+          <LibraryFilters collections={collections} tags={tags} />
         </div>
 
         {data.items.length === 0 ? (

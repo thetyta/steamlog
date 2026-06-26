@@ -4,7 +4,7 @@ import { Gamepad2, Sparkles, Library } from 'lucide-react'
 import { getSessionToken } from '@/lib/auth'
 
 export default function LandingPage() {
-  if (getSessionToken()) redirect('/dashboard')
+  if (getSessionToken()) redirect('/perfil')
 
   return (
     <main className="container flex min-h-screen flex-col items-center justify-center py-16">

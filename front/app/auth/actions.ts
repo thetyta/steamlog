@@ -50,7 +50,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   }
 
   setSessionToken(result.token)
-  redirect('/dashboard')
+  redirect('/perfil')
 }
 
 export async function registerAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -70,5 +70,5 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   }
 
   setSessionToken(result.token)
-  redirect('/dashboard')
+  redirect('/perfil')
 }

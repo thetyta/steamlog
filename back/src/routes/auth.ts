@@ -137,17 +137,16 @@ export async function authRoutes(app: FastifyInstance) {
         where: { id: userId },
         data: {
           steamId64: steamUser.steamid,
-          avatarUrl: steamUser.avatar.large,
           profileUrl: steamUser.profile.url,
         },
       })
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        return reply.redirect(`${env.FRONTEND_URL}/dashboard?steam=already_linked`)
+        return reply.redirect(`${env.FRONTEND_URL}/perfil?steam=already_linked`)
       }
       throw err
     }
 
-    return reply.redirect(`${env.FRONTEND_URL}/dashboard?steam=linked`)
+    return reply.redirect(`${env.FRONTEND_URL}/perfil?steam=linked`)
   })
 }

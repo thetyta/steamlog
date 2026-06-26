@@ -18,13 +18,17 @@ const games = [
 ]
 
 async function main() {
+  // A biblioteca abaixo é semeada direto, então o usuário demo já entra como
+  // "sincronizado" (librarySyncedAt) — assim /library funciona e /stats aparece.
+  // Sem steamId64: é uma conta de demonstração, não vinculada a uma Steam real.
   const demo = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
-    update: {},
+    update: { librarySyncedAt: new Date(), steamId64: null },
     create: {
       email: DEMO_EMAIL,
       passwordHash: await hashPassword(DEMO_PASSWORD),
       displayName: 'Professor Demo',
+      librarySyncedAt: new Date(),
     },
   })
 
@@ -103,7 +107,6 @@ async function main() {
       id: 'seed-session-1',
       userId: demo.id,
       gameId: created[2].id,
-      durationMinutes: 95,
       rating: 5,
       note: 'Run perfeita até o Hades final.',
     },

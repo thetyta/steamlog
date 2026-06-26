@@ -12,7 +12,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export function LibraryFilters() {
+type FilterOption = { id: string; name: string }
+
+export function LibraryFilters({
+  collections = [],
+  tags = [],
+}: {
+  collections?: FilterOption[]
+  tags?: FilterOption[]
+}) {
   const router = useRouter()
   const params = useSearchParams()
   const [pending, startTransition] = useTransition()
@@ -63,6 +71,44 @@ export function LibraryFilters() {
           <SelectItem value="ABANDONED">Largados</SelectItem>
         </SelectContent>
       </Select>
+
+      {collections.length > 0 && (
+        <Select
+          value={params.get('collectionId') ?? 'ALL'}
+          onValueChange={(v) => updateParam('collectionId', v === 'ALL' ? null : v)}
+        >
+          <SelectTrigger className="sm:w-44">
+            <SelectValue placeholder="Coleção" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Todas as coleções</SelectItem>
+            {collections.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {tags.length > 0 && (
+        <Select
+          value={params.get('tagId') ?? 'ALL'}
+          onValueChange={(v) => updateParam('tagId', v === 'ALL' ? null : v)}
+        >
+          <SelectTrigger className="sm:w-40">
+            <SelectValue placeholder="Tag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Todas as tags</SelectItem>
+            {tags.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select
         value={params.get('sortBy') ?? 'playtime'}

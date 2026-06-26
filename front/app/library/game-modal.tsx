@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyCover } from '@/components/empty-cover'
 import type { LibraryEntry } from './game-card'
+import { GameEditor } from './game-editor'
+import { GameOrganize } from './game-organize'
 
 type Screenshot = { thumb: string; full: string }
 
@@ -23,6 +25,8 @@ type LibraryDetail = LibraryEntry & {
     isFree: boolean
     screenshots: Screenshot[] | null
     steamAppId?: number
+    collections?: { id: string; name: string }[]
+    tags?: { id: string; name: string; color: string | null }[]
   }
 }
 
@@ -184,7 +188,6 @@ function ModalContent({
           transition={{ delay: 0.25 }}
           className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm"
         >
-          <Stat label="Status" value={entry.status} />
           <Stat
             label="Horas jogadas"
             value={
@@ -214,6 +217,36 @@ function ModalContent({
             />
           )}
         </motion.dl>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+          className="mt-6"
+        >
+          <GameEditor
+            key={detail ? 'loaded' : 'pre'}
+            gameId={entry.gameId}
+            initialStatus={(detail ?? entry).status}
+            initialRating={(detail ?? entry).userRating}
+            initialNote={detail?.userNote ?? null}
+          />
+        </motion.div>
+
+        {detail && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-4"
+          >
+            <GameOrganize
+              gameId={entry.gameId}
+              initialCollectionIds={(detail.game.collections ?? []).map((c) => c.id)}
+              initialTagIds={(detail.game.tags ?? []).map((t) => t.id)}
+            />
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 8 }}

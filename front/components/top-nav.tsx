@@ -4,7 +4,7 @@ import { Gamepad2, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getMe } from '@/lib/queries'
 
-type Active = 'dashboard' | 'library' | 'recommendations'
+type Active = 'perfil' | 'library' | 'collections' | 'sessions' | 'recommendations'
 
 export async function TopNav({ active }: { active?: Active }) {
   const me = await getMe()
@@ -14,16 +14,22 @@ export async function TopNav({ active }: { active?: Active }) {
     <header className="sticky top-0 z-20 border-b border-border/60 bg-background/70 backdrop-blur">
       <div className="container flex h-14 items-center justify-between gap-4">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Link href="/perfil" className="flex items-center gap-2 font-semibold">
             <Gamepad2 className="size-5 text-primary" />
             <span>GameMuse</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-1 text-sm">
-            <NavLink href="/dashboard" active={active === 'dashboard'}>
-              Dashboard
+            <NavLink href="/perfil" active={active === 'perfil'}>
+              Perfil
             </NavLink>
             <NavLink href="/library" active={active === 'library'}>
               Biblioteca
+            </NavLink>
+            <NavLink href="/collections" active={active === 'collections'}>
+              Coleções
+            </NavLink>
+            <NavLink href="/sessions" active={active === 'sessions'}>
+              Sessões
             </NavLink>
             <NavLink href="/recommendations" active={active === 'recommendations'}>
               Recomendações

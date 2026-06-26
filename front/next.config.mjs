@@ -5,6 +5,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.igdb.com' },
       { protocol: 'https', hostname: 'avatars.steamstatic.com' },
       { protocol: 'https', hostname: 'avatars.cloudflare.steamstatic.com' },
+      { protocol: 'https', hostname: 'static.wikia.nocookie.net' },
     ],
   },
 }

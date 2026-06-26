@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma.js'
 const createSchema = z.object({
   gameId: z.string().min(1),
   playedAt: z.coerce.date().optional(),
-  durationMinutes: z.number().int().min(1).max(10080),
+  durationMinutes: z.number().int().min(1).max(10080).nullable().optional(),
   rating: z.number().int().min(1).max(5).nullable().optional(),
   note: z.string().max(2000).nullable().optional(),
 })
@@ -37,7 +37,7 @@ export async function sessionsRoutes(app: FastifyInstance) {
         userId: request.user.sub,
         gameId: body.gameId,
         playedAt: body.playedAt,
-        durationMinutes: body.durationMinutes,
+        durationMinutes: body.durationMinutes ?? null,
         rating: body.rating ?? null,
         note: body.note ?? null,
       },

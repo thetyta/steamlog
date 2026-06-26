@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify'
 import { prisma } from '../lib/prisma.js'
 
 export async function gamesRoutes(app: FastifyInstance) {
+  app.addHook('onRequest', app.authenticate)
+
   app.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
     const game = await prisma.game.findUnique({

@@ -12,7 +12,7 @@ export type SyncResult =
 export async function syncSteamLibrary(): Promise<SyncResult> {
   try {
     const result = await api<SyncResponse>('/steam/sync', { method: 'POST' })
-    revalidatePath('/dashboard')
+    revalidatePath('/perfil')
     return { ok: true, ...result }
   } catch (e) {
     const message =

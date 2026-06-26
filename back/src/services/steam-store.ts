@@ -1,6 +1,29 @@
 import { request } from 'undici'
 
 const APPDETAILS_URL = 'https://store.steampowered.com/api/appdetails'
+const STORESEARCH_URL = 'https://store.steampowered.com/api/storesearch'
+
+type StoreSearchResponse = {
+  total: number
+  items?: { type: string; name: string; id: number }[]
+}
+
+/**
+ * Resolve um nome de jogo para o steamAppId via busca da loja.
+ * Tolerante a falha: retorna `null` em qualquer erro (não quebra a recomendação).
+ */
+export async function searchSteamAppId(name: string): Promise<number | null> {
+  try {
+    const url = `${STORESEARCH_URL}/?term=${encodeURIComponent(name)}&cc=br&l=portuguese`
+    const res = await request(url, { headers: { 'Accept-Language': 'pt-BR' } })
+    if (res.statusCode >= 400) return null
+    const body = (await res.body.json()) as StoreSearchResponse
+    const first = body.items?.find((i) => i.type === 'app') ?? body.items?.[0]
+    return first?.id ?? null
+  } catch {
+    return null
+  }
+}
 
 export type SteamStoreScreenshot = { thumb: string; full: string }
 
