@@ -50,14 +50,16 @@ export async function TopNav({ active }: { active?: Active }) {
               className="size-8 rounded-full"
             />
           )}
-          <Link
-            href="/auth/logout"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            aria-label="Sair"
-            title="Sair"
-          >
-            <LogOut className="size-4" />
-          </Link>
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              aria-label="Sair"
+              title="Sair"
+            >
+              <LogOut className="size-4" />
+            </button>
+          </form>
         </div>
       </div>
     </header>
