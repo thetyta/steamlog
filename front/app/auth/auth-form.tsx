@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
@@ -17,6 +18,12 @@ type Props = {
 export function AuthForm({ mode, action }: Props) {
   const [state, formAction] = useFormState(action, {})
   const isRegister = mode === 'register'
+
+  // Full reload (não router.push) pra garantir que o browser já gravou o cookie
+  // httpOnly do Set-Cookie antes da próxima request — evita o loop de 307 no /perfil.
+  useEffect(() => {
+    if (state.ok) window.location.href = '/perfil'
+  }, [state.ok])
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

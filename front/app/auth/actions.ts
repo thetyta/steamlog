@@ -1,11 +1,10 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { setSessionToken } from '@/lib/auth'
 import { env } from '@/lib/env'
 
-export type AuthState = { error?: string }
+export type AuthState = { error?: string; ok?: boolean }
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -49,8 +48,11 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     return { error: 'E-mail ou senha incorretos.' }
   }
 
+  // Não usamos redirect() aqui: setar o cookie httpOnly e redirecionar na MESMA
+  // server action faz o Next/Vercel descartar o Set-Cookie na navegação soft (RSC).
+  // Em vez disso devolvemos ok e o cliente faz um full reload (garante o cookie gravado).
   setSessionToken(result.token)
-  redirect('/perfil')
+  return { ok: true }
 }
 
 export async function registerAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -70,5 +72,5 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   }
 
   setSessionToken(result.token)
-  redirect('/perfil')
+  return { ok: true }
 }
